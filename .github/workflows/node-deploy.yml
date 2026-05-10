@@ -26,7 +26,7 @@ jobs:
                   tags: ${{ secrets.DOCKERHUB_USERNAME }}/node-app:latest
 
     deploy:
-        needs: build-and-push # Only deploy if the build succeeds
+        needs: build-and-push
         runs-on: ubuntu-latest
         steps:
             - name: Deploy to EC2 via SSH
@@ -36,17 +36,15 @@ jobs:
                   username: ec2-user
                   key: ${{ secrets.EC2_SSH_KEY }}
                   script: |
-                      # 1. Login to Docker (optional if public, but good practice)
-                      # 2. Pull the latest image
+                      # Pull the latest image from Docker Hub
                       docker pull ${{ secrets.DOCKERHUB_USERNAME }}/node-app:latest
 
-                      # 3. Stop and remove the old container if it exists
+                      # Stop and remove the existing container (ignore errors if it doesn't exist)
                       docker stop node-app || true
                       docker rm node-app || true
 
-                      # 4. Run the new container
-                      # Mapping port 80 (standard web) to 3000 (app port)
+                      # Start the new container with a fixed name and port 80
                       docker run -d --name node-app -p 80:3000 ${{ secrets.DOCKERHUB_USERNAME }}/node-app:latest
 
-                      # 5. Clean up old unused images to save space
+                      # Housekeeping: Remove old images to save disk space
                       docker image prune -f
