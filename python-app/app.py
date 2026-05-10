@@ -3,7 +3,7 @@ app = Flask(__name__)
 
 @app.get("/")
 def hello():
-    return "Python Flask is running in Docker and deployed with Github Actions!!"
+    return "Python Flask is running in Docker and deployed with Github Actions!"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
