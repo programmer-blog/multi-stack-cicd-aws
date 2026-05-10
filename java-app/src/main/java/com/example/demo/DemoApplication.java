@@ -14,6 +14,6 @@ public class DemoApplication {
 
     @GetMapping("/")
     public String hello() {
-        return "Java Spring Boot is running in Docker and deployed with GitHub Actions!";
+        return "Java Spring Boot is running in Docker and deployed via GitHub Actions!";
     }
 }
