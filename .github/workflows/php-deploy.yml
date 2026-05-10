@@ -1,4 +1,4 @@
-name: PHP Docker Build
+name: PHP Docker Build and Deploy
 
 on:
     push:
@@ -24,3 +24,28 @@ jobs:
                   context: ./php-app
                   push: true
                   tags: ${{ secrets.DOCKERHUB_USERNAME }}/php-app:latest
+
+    deploy:
+        needs: build-and-push
+        runs-on: ubuntu-latest
+        steps:
+            - name: Deploy to EC2 via SSH
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.EC2_HOST }}
+                  username: ec2-user
+                  key: ${{ secrets.EC2_SSH_KEY }}
+                  script: |
+                      # Pull the latest PHP image
+                      docker pull ${{ secrets.DOCKERHUB_USERNAME }}/php-app:latest
+
+                      # Stop and remove the old PHP container if it exists
+                      docker stop php-app || true
+                      docker rm php-app || true
+
+                      # Run the PHP container on Port 8082
+                      # (Host Port 8082 -> Container Port 80, which is standard for Apache/PHP)
+                      docker run -d --name php-app -p 8082:80 ${{ secrets.DOCKERHUB_USERNAME }}/php-app:latest
+
+                      # Cleanup old images to save disk space
+                      docker image prune -f
