@@ -1,4 +1,4 @@
-name: Python Docker Build
+name: Python Docker Build and Deploy
 
 on:
     push:
@@ -24,3 +24,28 @@ jobs:
                   context: ./python-app
                   push: true
                   tags: ${{ secrets.DOCKERHUB_USERNAME }}/python-app:latest
+
+    deploy:
+        needs: build-and-push
+        runs-on: ubuntu-latest
+        steps:
+            - name: Deploy to EC2 via SSH
+              uses: appleboy/ssh-action@v1.0.3
+              with:
+                  host: ${{ secrets.EC2_HOST }}
+                  username: ec2-user
+                  key: ${{ secrets.EC2_SSH_KEY }}
+                  script: |
+                      # Pull the latest Python image
+                      docker pull ${{ secrets.DOCKERHUB_USERNAME }}/python-app:latest
+
+                      # Stop and remove the old Python container if it exists
+                      docker stop python-app || true
+                      docker rm python-app || true
+
+                      # Run the Python container on Port 8081
+                      # Assuming your Python app inside the container runs on 5000
+                      docker run -d --name python-app -p 8081:5000 ${{ secrets.DOCKERHUB_USERNAME }}/python-app:latest
+
+                      # Cleanup old images
+                      docker image prune -f
